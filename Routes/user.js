@@ -8,7 +8,10 @@ const { User } = require("../Models/users");
 const emailvalidator = require("email-validator");
 const nodeMail = require("../Constants/nodeMail");
 const { generateOTP } = require("../Constants/otp");
+const auth =require("../Constants/verifyToken")
 
+
+//put auth reuired from constants verifytoken in between async keyword and router path 
 router.get("/all", async (req, res) => {
   try {
     let users = await User.find();
@@ -75,6 +78,7 @@ router.post("/add", async (req, res) => {
   }
 });
 
+//put auth reuired from constants verifytoken in between async keyword and router path 
 router.delete("/delete/:id", async (req, res) => {
   try {
     let user = await User.findByIdAndRemove(req.params.id);
@@ -99,6 +103,7 @@ router.delete("/delete/:id", async (req, res) => {
   }
 });
 
+//put auth reuired from constants verifytoken in between async keyword and router path 
 router.put("/updateUser/:id", async (req, res) => {
   try {
     let updateUser = await User.findById(req.params.id);
@@ -134,103 +139,63 @@ router.put("/updateUser/:id", async (req, res) => {
 
 //db password removed hence it will use passcode OTP
 router.post("/login", async (req, res) => {
-    //generate otp
-    const createOTP = async (email) => {
-      const otpGenerated = generateOTP();
+  //generate otp
+  const createOTP = async (email) => {
+    const otpGenerated = generateOTP();
 
-      try {
-        await sendMail({
-          to: email,
-          OTP: otpGenerated,
-        });
-        console.log(otpGenerated);
-        return [true, otpGenerated];
-      } catch (error) {
-        return [false, "Unable to sign up, Please try again later", error];
-      }
-    };
-
-    //actual login process
     try {
-      const { email, otp } = req.body;
-      const otpcode = await createOTP(email);
-
-      let loggedUser = await User.findOne({ email: email });
-
-      if (!loggedUser) {
-        return res.send({
-          success: false,
-          message: "No user",
-        });
-      }
-
-      if (otp != otpcode) {
-        res.send({
-          message: "invalid OTP code",
-        });
-      }
-
-      const tokenPayload = {
-        userId: loggedUser._id,
-        email: loggedUser.email,
-        firstName: loggedUser.name,
-        // address: loggedUser.address,
-      };
-
-      const token1 = jwt.sign(tokenPayload, TOKEN_SEC);
-
-      return res.send({
-        success: true,
-        message: "Successfully Login user",
-        Token: token1,
+      await sendMail({
+        to: email,
+        OTP: otpGenerated,
       });
+      console.log(otpGenerated);
+      return [true, otpGenerated];
     } catch (error) {
-      console.log(error);
+      return [false, "Unable to sign up, Please try again later", error];
+    }
+  };
+
+  //actual login process
+  try {
+    const { email, otp } = req.body;
+    const otpcode = createOTP(email);
+
+    let loggedUser = await User.findOne({ email: email });
+
+    if (!loggedUser) {
       return res.send({
         success: false,
-        message: "Server error",
+        message: "No user",
       });
     }
+
+    if (otp != otpcode) {
+      res.send({
+        message: "invalid OTP",
+      });
+    }
+
+    const tokenPayload = {
+      userId: loggedUser._id,
+      email: loggedUser.email,
+      firstName: loggedUser.name,
+      // address: loggedUser.address,
+    };
+
+    const token1 = jwt.sign(tokenPayload, TOKEN_SEC);
+
+    return res.send({
+      success: true,
+      message: "Successfully Login user",
+      Token: token1,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      success: false,
+      message: "Server error",
+    });
   }
-
-  // const random = Math.floor(Math.random() * 9000 + 1000);
-  // console.log(random);
-
-  // const accessEmail = req.body.email;
-  // const accessPassword = req.body.passcode;
-
-  // let loggedUser = await User.findOne({ email: accessEmail });
-
-  // if (!loggedUser) {
-  //   return res.send({
-  //     success: false,
-  //     message: "No user",
-  //   });
-  // }
-
-  // // const DbPasword = decrypt(loggedUser.password);
-
-  // if (random == accessPassword && loggedUser.email == accessEmail) {
-  //   const tokenPayload = {
-  //     userId: loggedUser._id,
-  //     email: loggedUser.email,
-  //     firstName: loggedUser.name,
-  //     // address: loggedUser.address,
-  //   };
-
-  //   const token1 = jwt.sign(tokenPayload, TOKEN_SEC);
-
-  //   return res.send({
-  //     success: true,
-  //     message: "Successfully Login user",
-  //     Token: token1,
-  //   });
-  // } else {
-  //   return res.send({
-  //     success: false,
-  //     message: "Password or Email mismatch",
-  //   });
-  // }
-);
+});
 
 module.exports = router;
