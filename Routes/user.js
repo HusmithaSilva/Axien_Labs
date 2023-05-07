@@ -58,6 +58,8 @@ router.post("/add", async (req, res) => {
       user = new User({
         name: req.body.name,
         email: req.body.email,
+        price: req.body.price,
+        stock: req.body.stock,
       });
 
       await user.save();
@@ -169,11 +171,11 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    if (otp != otpcode) {
-      res.send({
-        message: "invalid OTP",
-      });
-    }
+    // if (otp != otpcode) {
+    //   res.send({
+    //     message: "invalid OTP",
+    //   });
+    // }
 
     const tokenPayload = {
       userId: loggedUser._id,
